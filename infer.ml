@@ -133,6 +133,23 @@ type constr =
     | ExplInstance of ty * scheme
 
 (**
+ * A monomorphic set is denoted by M (uppercase m)
+ *
+ * Unlike the rest of the algorithm, which is bottom-up,
+ * to compute a set of monomorphic type variables M,
+ * a single top-down computation is used
+ *
+ * Unlike a type environment Γ, a monomorphic set M
+ * contains only type variables, not a mapping from
+ * name to type, and only the type variables introduced
+ * by lambdas at higher levels in the abstract
+ * syntax tree will be added to the set
+ *)
+module Set = Set.Make(String)
+
+type mono = Set.t
+
+(**
  * A substitution is denoted by S (uppercase s)
  *
  * Substitutions are mapping of type variables to types
@@ -177,21 +194,23 @@ let compose (s1 : subst) (s2 : subst) : subst =
     Map.map (fun ty -> apply s1 ty) s2 |> Map.union (fun _ ty _ -> Some ty) s1
 
 (**
- * A monomorphic set is denoted by M (uppercase m)
+ * Substitutions that do not pass the
+ * occur check are defined to be equal
+ * to the error substitution, denoted by T
  *
- * Unlike the rest of the algorithm, which is bottom-up,
- * to compute a set of monomorphic type variables M,
- * a single top-down computation is used
+ * The composition of any substitution S
+ * with the error substitution T results
+ * in T as well
  *
- * Unlike a type environment Γ, a monomorphic set M
- * contains only type variables, not a mapping from
- * name to type, and only the type variables introduced
- * by lambdas at higher levels in the abstract
- * syntax tree will be added to the set
+ * NOTE: This implementation uses
+ * exceptions as error substitution
  *)
-module Set = Set.Make(String)
+type err =
+    | UnboundVar of string
+    | OccurFail of var * ty
+    | UnifyFail of ty * ty
 
-type mono = Set.t
+exception Error of err
 
 (**
  * Constraints collection
@@ -385,7 +404,7 @@ let rec mgu (t1 : ty) (t2 : ty) : subst =
         match ty with
         | TVar var' when var = var' -> Map.empty
         | _ when Set.mem var (freevars ty) ->
-                failwith "Occurs check failed"
+            Error(OccurFail(var, ty)) |> raise
         | _ -> Map.singleton var ty
     in
     match (t1, t2) with
@@ -395,7 +414,7 @@ let rec mgu (t1 : ty) (t2 : ty) : subst =
          let s1 = mgu t1 t1' in
          let s2 = mgu (apply s1 t2) (apply s1 t2') in
          compose s2 s1
-    | _ -> failwith "Unification failed"
+    | _ -> Error(UnifyFail(t1, t2)) |> raise
 
 (**
  * Constraints solving
@@ -526,7 +545,7 @@ let env_aux (gamma : env) (a : assump list) : constr list =
             | Some sigma -> ExplInstance(ty, sigma) :: acc
             (* If domain(A) not a subset of domain(Γ) then
              * and undefined variable was referenced *)
-            | None -> "Unbound variable " ^ var |> failwith
+            | None -> Error(UnboundVar var) |> raise
        ) [] a
 
 (**
