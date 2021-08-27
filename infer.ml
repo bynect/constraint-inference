@@ -7,7 +7,6 @@
  *  | λx -> E
  *  | let x = E1 in E2
  *  | lit
- *
  *)
 type expr =
     | Var of string
@@ -444,7 +443,8 @@ let rec solve : constr list -> subst = function
         let ftv = Set.diff (freevars t2) (Set.of_list m) in
         if Set.inter ftv (activevars' c) |> Set.is_empty
         then solve (ExplInstance(t1, generalize m t2)::c)
-         (* TODO: Check if this is correct *)
+         (* TODO: Check if this is correct and terminates for
+          * all inputs *)
         else solve (c @ [ImplInstance(t1, t2, m)])
     | ExplInstance(t, sigma)::c ->
         (* Instantiate the type scheme σ and convert
