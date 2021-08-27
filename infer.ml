@@ -1,4 +1,16 @@
 (**
+ * This is an OCaml implementation of the
+ * bottom-up type inference algorithm
+ * described in the paper
+ *
+ * Bastiaan Heeren, Jurriaan Hage, Doaitse Swierstra
+ * Generalizing Hindley-Milner Type Inference Algorithms
+ * Institute of Information and Computing Sciences,
+ * Utrecht University, 2002
+ * [UU-CS-2002-031]
+ *)
+
+(**
  * An expression is denoted by E (uppercase e)
  *
  * E ::=
@@ -32,7 +44,7 @@ type var = string
 (**
  * Generate an unique fresh type variable β
  *
- * Note: This function is stateful
+ * NOTE: This function is stateful
  *)
 let var_fresh : unit -> var =
     let state = ref 1 in
@@ -144,7 +156,7 @@ let apply' (s : subst) : scheme -> scheme = function
  * Composing substitution S1 and substitution S2 is
  * written as (S2 ◦ S1) and results in another substitution
  *
- * Note: Substitution composition is left biased
+ * NOTE: Substitution composition is left biased
  *)
 let compose (s1 : subst) (s2 : subst) : subst =
     Map.map (fun ty -> apply s1 ty) s2 |> Map.union (fun _ ty _ -> Some ty) s1
@@ -209,12 +221,12 @@ type mono = Set.t
  * Literals return their type without any
  * new constraint or assumption
  *
- * Note: Although the set of constrains is
+ * NOTE: Although the set of constrains is
  * not ordered, an implicit instance constraint
  * requires some constraints to be solved before
  * it becomes solvable
  *
- * Note: In this implementation the monomorphic set M
+ * NOTE: In this implementation the monomorphic set M
  * is propagated alongside the abstract syntax tree
  * traversal by the collect function, but it could be
  * also easily implemented as a separate function
@@ -302,7 +314,7 @@ let apply_constr' (s : subst) (c : constr list) : constr list =
  * activevars (τ1 ≤M τ2) = freevars(τ1) ∪ (freevars(M) ∩ freevars(τ2))
  * activevars (τ ≤ σ)    = freevars(τ) ∪ freevars(σ)
  *
- * Note: freevars(M) is M
+ * NOTE: freevars(M) is M
  *)
 let activevars : constr -> Set.t = function
     | Equality(t1, t2) -> Set.union (freevars t1) (freevars t2)
@@ -450,6 +462,79 @@ let rec solve : constr list -> subst = function
         (* Instantiate the type scheme σ and convert
          * the explicit instance constraint to an
          * equality constraint between the type τ and
-         * the newly instantiated type
-         *)
+         * the newly instantiated type *)
             solve (Equality(t, instantiate sigma)::c)
+
+(**
+ * A type environment is denoted by Γ (uppercase gamma)
+ *
+ * In a type environment a type scheme σ
+ * is paired with a variable name x
+ *
+ * Unlike algorithm W and M, which use the
+ * type environment with top-down rules,
+ * this algorithm the type environment Γ
+ * is combined with the assumption set
+ * to create an extra set of constraints
+ *
+ * A ≤ Γ = { τ ≤ σ | x:τ ∈ A, x:σ ∈ Γ }
+ *
+ * The following properties can be derived
+ * from the definition of ≤
+ *
+ * (A1 ∪ A2) ≤ Γ = (A1 ≤ Γ) ∪ (A2 ≤ Γ)
+ * A ≤ (Γ1 ∪ Γ2) = (A ≤ Γ1) ∪ (A ≤ Γ2)
+ * A ≤ Γ\x       = A\x ≤ Γ
+ * A ≤ {x: τ}    = {τ' ≡ τ | x:τ' ∈ A}
+ *)
+type env = scheme Map.t
+
+(**
+ * This function creates a constraint set C
+ * given a type environment Γ and an
+ * assumption set A
+ *
+ * In a correct program dom(A) ⊆ dom(Γ),
+ * meaning that all the variable names
+ * present in the assumption set A must
+ * be bound in the type environment Γ
+ *
+ * TODO: Find a better name
+ *)
+let env_aux (gamma : env) (a : assump list) : constr list =
+    match a with
+    | [] -> []
+    | _ ->
+       List.fold_left (fun acc a' ->
+           let Assumption(var, ty) = a' in
+            match Map.find_opt var gamma with
+            | Some sigma -> ExplInstance(ty, sigma) :: acc
+            (* If domain(A) not a subset of domain(Γ) then
+             * and undefined variable was referenced *)
+            | None -> "Unbound variable " ^ var |> failwith
+       ) [] a
+
+(**
+ * This algorithm computes a type τ
+ * for an expression E given a type
+ * environment Γ, also returning a
+ * substitution S, giving it the same
+ * signature of algorithm W
+ *
+ * Because there is no distinction
+ * between the type variables introduced
+ * by applying the inference rules,
+ * and those (monomorphic) type variables
+ * that occur in the initial type environment Γ,
+ * a substitution can change the types in Γ
+ *
+ * infer(Γ, E) = (S, Sτ)
+ *
+ * NOTE: Algorithm W is a deterministic
+ * instance of infer
+ *)
+let infer (gamma : env) (e : expr) : (subst * ty) =
+    let (ty, a, c) = collect Set.empty e in
+    let c' = env_aux gamma a in
+    let s = solve (c @ c') in
+    s, apply s ty

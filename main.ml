@@ -1,7 +1,7 @@
 open Infer
 
 let () =
-    let expr = Abs("m",
+    let e = Abs("m",
                 Let("y", Var("m"),
                     Let("x", App(Var("y"), Lit(Bool true)),
                     Var("x"))))
@@ -10,7 +10,7 @@ let () =
                     App(Var("id"), Lit(Bool true))))
                     *)
     in
-    let (ty, a, c) = collect Set.empty expr
+    let (ty, a, c) = collect Set.empty e
     in
     print_endline "Assumptions";
     List.iter (fun a' -> Print.string_of_assump a' |> print_endline) a;
@@ -22,5 +22,12 @@ let () =
     let ty' = apply s ty
     in
     print_endline "Type";
-    Printf.printf "%s => %s\n" (Print.string_of_ty ty) (Print.string_of_ty ty')
+    Printf.printf "%s => %s\n" (Print.string_of_ty ty) (Print.string_of_ty ty');
+    let (s, ty) = infer Map.empty e in
+    print_endline "Substitutions";
+    Print.string_of_subst s |> print_endline;
+    print_endline "Type";
+    Printf.printf "%s\n" (Print.string_of_ty ty)
+
+
 
