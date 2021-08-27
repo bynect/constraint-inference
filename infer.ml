@@ -1,13 +1,28 @@
 (**
- * This is an OCaml implementation of the
+ * This code is public domain, and
+ * a full code listing can be found at
+ * github.com/bynect/constraint-inference
+ *
+ * This is an indipendent implementation of the
  * bottom-up type inference algorithm
- * described in the paper
+ * described in the following paper
  *
  * Bastiaan Heeren, Jurriaan Hage, Doaitse Swierstra
  * Generalizing Hindley-Milner Type Inference Algorithms
  * Institute of Information and Computing Sciences,
  * Utrecht University, 2002
  * [UU-CS-2002-031]
+ *
+ * A copy of the original paper can be found at
+ * www.cs.uu.nl/research/techreps/repo/CS-2002/2002-031.pdf
+ *
+ * NOTE: Some sentences are either taken verbatim
+ * or rewording of excerpt from the paper
+ *
+ * NOTE: While the main algorithm described in
+ * the paper is unchanged, there may be small
+ * divergences between this implementation and
+ * the paper pseudo-implementation
  *)
 
 (**
@@ -370,7 +385,7 @@ let rec mgu (t1 : ty) (t2 : ty) : subst =
         match ty with
         | TVar var' when var = var' -> Map.empty
         | _ when Set.mem var (freevars ty) ->
-                failwith "occurs check failed"
+                failwith "Occurs check failed"
         | _ -> Map.singleton var ty
     in
     match (t1, t2) with
@@ -380,7 +395,7 @@ let rec mgu (t1 : ty) (t2 : ty) : subst =
          let s1 = mgu t1 t1' in
          let s2 = mgu (apply s1 t2) (apply s1 t2') in
          compose s2 s1
-    | _ -> failwith "mgu failed"
+    | _ -> failwith "Unification failed"
 
 (**
  * Constraints solving
