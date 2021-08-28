@@ -563,7 +563,14 @@ let env_aux (gamma : env) (a : assump list) : constr list =
  * that occur in the initial type environment Γ,
  * a substitution can change the types in Γ
  *
- * infer(Γ, E) = (S, Sτ)
+ * infer(Γ, E) =
+ *  A, C |- E:τ
+ *  if dom(A) ⊄ dom(Γ)
+ *  then report unbound variables exist
+ *  else S = solve(C ∪ A ≤ Γ)
+ *       return (S, Sτ)
+ *
+ * (S, Sτ)
  *
  * NOTE: Algorithm W is a deterministic
  * instance of infer
