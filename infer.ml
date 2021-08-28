@@ -545,7 +545,7 @@ let env_aux (gamma : env) (a : assump list) : constr list =
             match Map.find_opt var gamma with
             | Some sigma -> ExplInstance(ty, sigma) :: acc
             (* If domain(A) not a subset of domain(Γ) then
-             * and undefined variable was referenced *)
+             * an undefined variable was referenced *)
             | None -> Error(UnboundVar var) |> raise
        ) [] a
 
