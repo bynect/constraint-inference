@@ -386,7 +386,7 @@ let instantiate : scheme -> ty = function
  * type variables M
  *
  * generalize(M, τ) = ∀α.τ
- *                    where ~α = freevars(τ) −M
+ *                    where α1...αn = freevars(τ) − M
  *)
 let generalize (m : var list) (ty : ty) : scheme =
   let m = Set.diff (freevars ty) (Set.of_list m) in
