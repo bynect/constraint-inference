@@ -33,7 +33,7 @@ let string_of_constr : constr -> string = function
 
 let string_of_subst (s : subst) : string =
   let rec recstring (acc : string) : (var * ty) list -> string = function
-    | [] -> acc ^ " }"
+    | [] -> acc ^ "}"
     | [ (var, ty) ] -> acc ^ var ^ " := " ^ string_of_ty ty ^ " }"
     | (var, ty) :: s ->
         let acc' = acc ^ var ^ " := " ^ string_of_ty ty ^ ", " in
