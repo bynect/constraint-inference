@@ -574,6 +574,13 @@ let env_aux (gamma : env) (a : assump list) : constr list =
  *
  * NOTE: Algorithm W is a deterministic
  * instance of infer
+ *
+ * NOTE: This algorithm is nondeterministic
+ * as the order in which the constraints are
+ * solved determines the location where a type
+ * error is detected and reported
+ * In the process of type inferencing,
+ * this dependency can result in a bias
  *)
 let infer (gamma : env) (e : expr) : (subst * ty) =
     let (ty, a, c) = collect Set.empty e in
