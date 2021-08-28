@@ -12,7 +12,8 @@ and string_of_ty' : ty -> string = function
 let string_of_scheme : scheme -> string = function
   | Scheme ([], ty) -> string_of_ty ty
   | Scheme (vars, ty) ->
-      List.fold_left (fun acc var -> var ^ " " ^ acc) (string_of_ty ty) vars
+      (List.fold_left (fun acc var -> acc ^ var ^ " ") "" vars)
+      ^ ". " ^ string_of_ty ty
 
 let string_of_assump : assump -> string = function
   | Assumption (x, ty) -> x ^ " A= " ^ string_of_ty ty
@@ -33,7 +34,7 @@ let string_of_constr : constr -> string = function
 
 let string_of_subst (s : subst) : string =
   let rec recstring (acc : string) : (var * ty) list -> string = function
-    | [] -> acc ^ " }"
+    | [] -> acc ^ "}"
     | [ (var, ty) ] -> acc ^ var ^ " := " ^ string_of_ty ty ^ " }"
     | (var, ty) :: s ->
         let acc' = acc ^ var ^ " := " ^ string_of_ty ty ^ ", " in
