@@ -1,11 +1,6 @@
 open Infer
 
-let () =
-    let e = Abs("m",
-                Let("y", Var("m"),
-                    Let("x", App(Var("y"), Lit(Bool true)),
-                    Var("x"))))
-    in
+let main e =
     try
         let (s, ty) = infer Map.empty e in
             print_endline "Substitutions";
@@ -23,3 +18,10 @@ let () =
 
 
 
+let () =
+    let e = Abs("m",
+                Let("y", Var("m"),
+                    Let("x", App(Var("y"), Lit(Bool true)),
+                    Var("x"))))
+    in
+    main e
