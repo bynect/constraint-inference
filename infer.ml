@@ -316,10 +316,6 @@ let freevars' : scheme -> Set.t = function
     | Scheme(vars, ty) -> Set.diff (freevars ty) (Set.of_list vars)
 
 (**
- * A substitution S applied to a constraint set
- * is simply applied to all the types and
- * type schemes contained therein
- *
  * For implicit instance constraints, the
  * substitution S is also applied to the set
  * of monomorphic type variables M
@@ -337,6 +333,11 @@ let apply_constr (s : subst) : constr -> constr = function
             ImplInstance(apply s t1, apply s t2, m')
     | ExplInstance(t, sigma) -> ExplInstance (apply s t, apply' s sigma)
 
+(**
+ * A substitution S applied to a constraint set
+ * is simply applied to all the types and
+ * type schemes contained therein
+ *)
 let apply_constr' (s : subst) (c : constr list) : constr list =
     List.map (apply_constr s) c
 
