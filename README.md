@@ -15,7 +15,7 @@ the paper pseudo-implementation.
 
 This repo contains the following branches:
 
-- [main](https://github.com/bynect/constraint-inference/tree/main) Original algorithm implementation with other additions
+- [main](https://github.com/bynect/constraint-inference/tree/main) Original algorithm implementation with some additions (parser and repl)
 - [original](https://github.com/bynect/constraint-inference/tree/original) Original algorithm implementation with detailed comments
 - [clean](https://github.com/bynect/constraint-inference/tree/clean) A copy of the main branch without the comments
 
