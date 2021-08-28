@@ -36,15 +36,13 @@
  *  | lit
  *)
 type expr =
-    | Var of string
-    | App of expr * expr
-    | Abs of string * expr
-    | Let of string * expr * expr
-    | Lit of lit
+  | Var of string
+  | App of expr * expr
+  | Abs of string * expr
+  | Let of string * expr * expr
+  | Lit of lit
 
-and lit =
-    | Int of int
-    | Bool of bool
+and lit = Int of int | Bool of bool
 
 (**
  * A type variable is denoted by α (lowercase alpha)
@@ -62,11 +60,11 @@ type var = string
  * NOTE: This function is stateful
  *)
 let var_fresh : unit -> var =
-    let state = ref 1 in
-    fun () ->
-        let n = !state in
-        state := n + 1;
-        Printf.sprintf "t%d" n
+  let state = ref 1 in
+  fun () ->
+    let n = !state in
+    state := n + 1;
+    Printf.sprintf "t%d" n
 
 (**
  * A type is denoted by τ (lowercase tau)
@@ -77,10 +75,7 @@ let var_fresh : unit -> var =
  *  | Bool
  *  | τ1 -> τ2
  *)
-type ty =
-    | TVar of var
-    | TConst of string
-    | TFun of ty * ty
+type ty = TVar of var | TConst of string | TFun of ty * ty
 
 (**
  * A type scheme is denoted by σ (lowercase sigma)
@@ -128,9 +123,9 @@ type assump = Assumption of string * ty
  *  | τ ≤ σ
  *)
 type constr =
-    | Equality of ty * ty
-    | ImplInstance of ty * ty * var list
-    | ExplInstance of ty * scheme
+  | Equality of ty * ty
+  | ImplInstance of ty * ty * var list
+  | ExplInstance of ty * scheme
 
 (**
  * A monomorphic set is denoted by M (uppercase m)
@@ -145,7 +140,7 @@ type constr =
  * by lambdas at higher levels in the abstract
  * syntax tree will be added to the set
  *)
-module Set = Set.Make(String)
+module Set = Set.Make (String)
 
 type mono = Set.t
 
@@ -158,7 +153,7 @@ type mono = Set.t
  *
  * Substitutions are idempotent, so that S(Sτ) = Sτ
  *)
-module Map = Map.Make(String)
+module Map = Map.Make (String)
 
 type subst = ty Map.t
 
@@ -166,23 +161,22 @@ type subst = ty Map.t
  * Substitution application for a type
  **)
 let rec apply (s : subst) : ty -> ty = function
-    | TVar var ->
-            begin
-                match Map.find_opt var s with
-                | Some ty -> ty
-                | None -> TVar var
-            end
-    | TConst name -> TConst name
-    | TFun(t1, t2) -> TFun(apply s t1, apply s t2)
+  | TVar var -> begin
+      match Map.find_opt var s with
+      | Some ty -> ty
+      | None -> TVar var
+    end
+  | TConst name -> TConst name
+  | TFun (t1, t2) -> TFun (apply s t1, apply s t2)
 
 (**
  * Substitution application for a type scheme
  *)
 let apply' (s : subst) : scheme -> scheme = function
-    | Scheme([], ty) -> Scheme([], apply s ty)
-    | Scheme(vars, ty) ->
-        let s' = List.fold_right (fun v acc -> Map.remove v acc) vars s in
-        Scheme (vars, apply s' ty)
+  | Scheme ([], ty) -> Scheme ([], apply s ty)
+  | Scheme (vars, ty) ->
+      let s' = List.fold_right (fun v acc -> Map.remove v acc) vars s in
+      Scheme (vars, apply s' ty)
 
 (**
  * Composing substitution S1 and substitution S2 is
@@ -191,7 +185,7 @@ let apply' (s : subst) : scheme -> scheme = function
  * NOTE: Substitution composition is left biased
  *)
 let compose (s1 : subst) (s2 : subst) : subst =
-    Map.map (fun ty -> apply s1 ty) s2 |> Map.union (fun _ ty _ -> Some ty) s1
+  Map.map (fun ty -> apply s1 ty) s2 |> Map.union (fun _ ty _ -> Some ty) s1
 
 (**
  * Substitutions that do not pass the
@@ -205,10 +199,7 @@ let compose (s1 : subst) (s2 : subst) : subst =
  * NOTE: This implementation uses
  * exceptions as error substitution
  *)
-type err =
-    | UnboundVar of string
-    | OccurFail of var * ty
-    | UnifyFail of ty * ty
+type err = UnboundVar of string | OccurFail of var * ty | UnifyFail of ty * ty
 
 exception Error of err
 
@@ -266,35 +257,40 @@ exception Error of err
  * also easily implemented as a separate function
  *)
 let rec collect (m : mono) : expr -> ty * assump list * constr list = function
-    | Var (x) ->
-            let ty = TVar (var_fresh ()) in
-            ty, [Assumption (x, ty)], []
-    | App (e1, e2) ->
-            let beta = var_fresh ()
-            and (t1, a1, c1) = collect m e1
-            and (t2, a2, c2) = collect m e2 in
-            TVar beta, a1 @ a2, Equality (t1, TFun(t2, TVar beta)) :: (c1 @ c2)
-    | Abs (x, e) ->
-        let beta = var_fresh () in
-        let (t, a, c) = collect (Set.add beta m) e in
-        let a', c' = List.fold_left (fun (acc, acc') a' ->
-            let Assumption(x', t') = a' in
-            if x' = x then (acc, Equality (t', TVar beta)::acc')
-            else (Assumption(x', t')::acc, acc'))
-        ([], c) a in
-        TFun(TVar beta, t), a', c'
-    | Let (x, e1, e2) ->
-         let (t1, a1, c1) = collect m e1
-         and (t2, a2, c2) = collect m e2 in
-         let m' = Set.to_seq m |> List.of_seq in
-          let a', c' = List.fold_left (fun (acc, acc') a' ->
-            let Assumption(x', t') = a' in
-            if x' = x then (acc, ImplInstance (t', t1, m')::acc')
-            else (Assumption(x', t')::acc, acc'))
-          ([], []) a2 in
-         t2, a1 @ a', c1 @ c2 @ c'
-    | Lit (Int _) -> TConst("Int"), [], []
-    | Lit (Bool _) -> TConst ("Bool"), [], []
+  | Var x ->
+      let ty = TVar (var_fresh ()) in
+      (ty, [ Assumption (x, ty) ], [])
+  | App (e1, e2) ->
+      let beta = var_fresh ()
+      and t1, a1, c1 = collect m e1
+      and t2, a2, c2 = collect m e2 in
+      (TVar beta, a1 @ a2, Equality (t1, TFun (t2, TVar beta)) :: (c1 @ c2))
+  | Abs (x, e) ->
+      let beta = var_fresh () in
+      let t, a, c = collect (Set.add beta m) e in
+      let a', c' =
+        List.fold_left
+          (fun (acc, acc') a' ->
+            let (Assumption (x', t')) = a' in
+            if x' = x then (acc, Equality (t', TVar beta) :: acc')
+            else (Assumption (x', t') :: acc, acc'))
+          ([], c) a
+      in
+      (TFun (TVar beta, t), a', c')
+  | Let (x, e1, e2) ->
+      let t1, a1, c1 = collect m e1 and t2, a2, c2 = collect m e2 in
+      let m' = Set.to_seq m |> List.of_seq in
+      let a', c' =
+        List.fold_left
+          (fun (acc, acc') a' ->
+            let (Assumption (x', t')) = a' in
+            if x' = x then (acc, ImplInstance (t', t1, m') :: acc')
+            else (Assumption (x', t') :: acc, acc'))
+          ([], []) a2
+      in
+      (t2, a1 @ a', c1 @ c2 @ c')
+  | Lit (Int _) -> (TConst "Int", [], [])
+  | Lit (Bool _) -> (TConst "Bool", [], [])
 
 (**
  * The set of free type variables of a type τ is
@@ -302,9 +298,9 @@ let rec collect (m : mono) : expr -> ty * assump list * constr list = function
  * the type variables in τ
  *)
 let rec freevars : ty -> Set.t = function
-    | TVar var -> Set.singleton var
-    | TConst _ -> Set.empty
-    | TFun (t1, t2) -> Set.union (freevars t1) (freevars t2)
+  | TVar var -> Set.singleton var
+  | TConst _ -> Set.empty
+  | TFun (t1, t2) -> Set.union (freevars t1) (freevars t2)
 
 (**
  * The set of free type variables of a type scheme σ
@@ -312,8 +308,8 @@ let rec freevars : ty -> Set.t = function
  * freevars(τ) - α
  *)
 let freevars' : scheme -> Set.t = function
-    | Scheme([], ty) -> freevars ty
-    | Scheme(vars, ty) -> Set.diff (freevars ty) (Set.of_list vars)
+  | Scheme ([], ty) -> freevars ty
+  | Scheme (vars, ty) -> Set.diff (freevars ty) (Set.of_list vars)
 
 (**
  * For implicit instance constraints, the
@@ -321,17 +317,20 @@ let freevars' : scheme -> Set.t = function
  * of monomorphic type variables M
  *)
 let apply_constr (s : subst) : constr -> constr = function
-    | Equality(t1, t2) -> Equality(apply s t1, apply s t2)
-    | ImplInstance(t1, t2, m) ->
-            let m' = List.fold_left (fun acc var ->
-                match Map.find_opt var s with
-                | Some ty ->
-                    let vars = freevars (apply s ty) |> Set.to_seq |> List.of_seq in
-                    vars @ acc
-                | None -> var::acc)
-            [] m in
-            ImplInstance(apply s t1, apply s t2, m')
-    | ExplInstance(t, sigma) -> ExplInstance (apply s t, apply' s sigma)
+  | Equality (t1, t2) -> Equality (apply s t1, apply s t2)
+  | ImplInstance (t1, t2, m) ->
+      let m' =
+        List.fold_left
+          (fun acc var ->
+            match Map.find_opt var s with
+            | Some ty ->
+                let vars = freevars (apply s ty) |> Set.to_seq |> List.of_seq in
+                vars @ acc
+            | None -> var :: acc)
+          [] m
+      in
+      ImplInstance (apply s t1, apply s t2, m')
+  | ExplInstance (t, sigma) -> ExplInstance (apply s t, apply' s sigma)
 
 (**
  * A substitution S applied to a constraint set
@@ -339,7 +338,7 @@ let apply_constr (s : subst) : constr -> constr = function
  * type schemes contained therein
  *)
 let apply_constr' (s : subst) (c : constr list) : constr list =
-    List.map (apply_constr s) c
+  List.map (apply_constr s) c
 
 (**
  * The active type variables in a constraint are
@@ -352,15 +351,16 @@ let apply_constr' (s : subst) (c : constr list) : constr list =
  * NOTE: freevars(M) is M
  *)
 let activevars : constr -> Set.t = function
-    | Equality(t1, t2) -> Set.union (freevars t1) (freevars t2)
-    | ImplInstance(t1, t2, m) ->
-        let m' = Set.of_list m in
-        Set.union (freevars t1) (Set.inter m' (freevars t2))
-    | ExplInstance(t, sigma) -> Set.union (freevars t) (freevars' sigma)
+  | Equality (t1, t2) -> Set.union (freevars t1) (freevars t2)
+  | ImplInstance (t1, t2, m) ->
+      let m' = Set.of_list m in
+      Set.union (freevars t1) (Set.inter m' (freevars t2))
+  | ExplInstance (t, sigma) -> Set.union (freevars t) (freevars' sigma)
 
 let activevars' : constr list -> Set.t = function
-    | [] -> Set.empty
-    | c -> List.fold_left (fun acc c' -> Set.union (activevars c') acc) Set.empty c
+  | [] -> Set.empty
+  | c ->
+      List.fold_left (fun acc c' -> Set.union (activevars c') acc) Set.empty c
 
 (**
  * Instantiate the type scheme σ by subsituting
@@ -371,11 +371,14 @@ let activevars' : constr list -> Set.t = function
  *                               where β1, ..., βn are fresh
  *)
 let instantiate : scheme -> ty = function
-    | Scheme ([], ty) -> ty
-    | Scheme(vars, ty) ->
-       let s = List.fold_left (fun acc var ->
-           Map.add var (TVar (var_fresh ())) acc ) Map.empty vars
-       in apply s ty
+  | Scheme ([], ty) -> ty
+  | Scheme (vars, ty) ->
+      let s =
+        List.fold_left
+          (fun acc var -> Map.add var (TVar (var_fresh ())) acc)
+          Map.empty vars
+      in
+      apply s ty
 
 (**
  * Generalize a type τ to create a type
@@ -386,8 +389,8 @@ let instantiate : scheme -> ty = function
  *                    where ~α = freevars(τ) −M
  *)
 let generalize (m : var list) (ty : ty) : scheme =
-    let m = Set.diff (freevars ty) (Set.of_list m) in
-    Scheme (Set.to_seq m |> List.of_seq, ty)
+  let m = Set.diff (freevars ty) (Set.of_list m) in
+  Scheme (Set.to_seq m |> List.of_seq, ty)
 
 (**
  * Most General Unification
@@ -401,21 +404,20 @@ let generalize (m : var list) (ty : ty) : scheme =
  * by definition that Sτ1 = Sτ2
  *)
 let rec mgu (t1 : ty) (t2 : ty) : subst =
-    let bind var ty =
-        match ty with
-        | TVar var' when var = var' -> Map.empty
-        | _ when Set.mem var (freevars ty) ->
-            Error(OccurFail(var, ty)) |> raise
-        | _ -> Map.singleton var ty
-    in
-    match (t1, t2) with
-    | t1, t2 when t1 == t2 -> Map.empty
-    | TVar var, ty | ty, TVar var -> bind var ty
-    | TFun(t1, t2), TFun(t1', t2') ->
-         let s1 = mgu t1 t1' in
-         let s2 = mgu (apply s1 t2) (apply s1 t2') in
-         compose s2 s1
-    | _ -> Error(UnifyFail(t1, t2)) |> raise
+  let bind var ty =
+    match ty with
+    | TVar var' when var = var' -> Map.empty
+    | _ when Set.mem var (freevars ty) -> Error (OccurFail (var, ty)) |> raise
+    | _ -> Map.singleton var ty
+  in
+  match (t1, t2) with
+  | t1, t2 when t1 == t2 -> Map.empty
+  | TVar var, ty | ty, TVar var -> bind var ty
+  | TFun (t1, t2), TFun (t1', t2') ->
+      let s1 = mgu t1 t1' in
+      let s2 = mgu (apply s1 t2) (apply s1 t2') in
+      compose s2 s1
+  | _ -> Error (UnifyFail (t1, t2)) |> raise
 
 (**
  * Constraints solving
@@ -475,30 +477,30 @@ let rec mgu (t1 : ty) (t2 : ty) : subst =
  * for which its condition is fulfilled
  *)
 let rec solve : constr list -> subst = function
-    | [] -> Map.empty
-    | Equality(t1, t2)::c ->
-        (* Find the substitution S for the most general unifier
-         * and apply it to the constraint set C *)
-        let s = mgu t1 t2 in
-        compose (apply_constr' s c |> solve) s
-    | ImplInstance(t1, t2, m)::c ->
-        (* If the  constraint is solvable then
-         * create a type scheme σ by generalizing
-         * the type τ2 with the monomorphic set M
-         * and transform the implicit instance constraint
-         * to an explicit instance constraint *)
-        let ftv = Set.diff (freevars t2) (Set.of_list m) in
-        if Set.inter ftv (activevars' c) |> Set.is_empty
-        then solve (ExplInstance(t1, generalize m t2)::c)
-         (* TODO: Check if this is correct and terminates for
-          * all inputs *)
-        else solve (c @ [ImplInstance(t1, t2, m)])
-    | ExplInstance(t, sigma)::c ->
-        (* Instantiate the type scheme σ and convert
-         * the explicit instance constraint to an
-         * equality constraint between the type τ and
-         * the newly instantiated type *)
-            solve (Equality(t, instantiate sigma)::c)
+  | [] -> Map.empty
+  | Equality (t1, t2) :: c ->
+      (* Find the substitution S for the most general unifier
+       * and apply it to the constraint set C *)
+      let s = mgu t1 t2 in
+      compose (apply_constr' s c |> solve) s
+  | ImplInstance (t1, t2, m) :: c ->
+      (* If the  constraint is solvable then
+       * create a type scheme σ by generalizing
+       * the type τ2 with the monomorphic set M
+       * and transform the implicit instance constraint
+       * to an explicit instance constraint *)
+      let ftv = Set.diff (freevars t2) (Set.of_list m) in
+      if Set.inter ftv (activevars' c) |> Set.is_empty then
+        solve (ExplInstance (t1, generalize m t2) :: c)
+        (* TODO: Check if this is correct and terminates for
+         * all inputs *)
+      else solve (c @ [ ImplInstance (t1, t2, m) ])
+  | ExplInstance (t, sigma) :: c ->
+      (* Instantiate the type scheme σ and convert
+       * the explicit instance constraint to an
+       * equality constraint between the type τ and
+       * the newly instantiated type *)
+      solve (Equality (t, instantiate sigma) :: c)
 
 (**
  * A type environment is denoted by Γ (uppercase gamma)
@@ -537,17 +539,18 @@ type env = scheme Map.t
  * TODO: Find a better name
  *)
 let env_aux (gamma : env) (a : assump list) : constr list =
-    match a with
-    | [] -> []
-    | _ ->
-       List.fold_left (fun acc a' ->
-           let Assumption(var, ty) = a' in
-            match Map.find_opt var gamma with
-            | Some sigma -> ExplInstance(ty, sigma) :: acc
-            (* If domain(A) not a subset of domain(Γ) then
-             * an undefined variable was referenced *)
-            | None -> Error(UnboundVar var) |> raise
-       ) [] a
+  match a with
+  | [] -> []
+  | _ ->
+      List.fold_left
+        (fun acc a' ->
+          let (Assumption (var, ty)) = a' in
+          match Map.find_opt var gamma with
+          | Some sigma -> ExplInstance (ty, sigma) :: acc
+          (* If domain(A) not a subset of domain(Γ) then
+           * an undefined variable was referenced *)
+          | None -> Error (UnboundVar var) |> raise)
+        [] a
 
 (**
  * This algorithm computes a type τ
@@ -582,8 +585,8 @@ let env_aux (gamma : env) (a : assump list) : constr list =
  * In the process of type inferencing,
  * this dependency can result in a bias
  *)
-let infer (gamma : env) (e : expr) : (subst * ty) =
-    let (ty, a, c) = collect Set.empty e in
-    let c' = env_aux gamma a in
-    let s = solve (c @ c') in
-    s, apply s ty
+let infer (gamma : env) (e : expr) : subst * ty =
+  let ty, a, c = collect Set.empty e in
+  let c' = env_aux gamma a in
+  let s = solve (c @ c') in
+  (s, apply s ty)
