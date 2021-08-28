@@ -1,2 +1,8 @@
 (executable
   (name main))
+
+(ocamllex
+ (modules lex))
+
+(ocamlyacc
+ (modules parse))

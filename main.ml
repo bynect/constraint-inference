@@ -1,27 +1,32 @@
 open Infer
 
-let main e =
-  try
-    let s, ty = infer Map.empty e in
-    print_endline "Substitutions";
-    Pretty.string_of_subst s |> print_endline;
-    print_endline "Type";
-    Pretty.string_of_ty ty |> print_endline
-  with
-  | Error (UnboundVar var) ->
-      Printf.printf "Unbound variable `%s`" var
-  | Error (OccurFail (var, ty)) ->
-      Printf.printf "Occurs check failed in `%s = %s`" var
-        (Pretty.string_of_ty ty)
-  | Error (UnifyFail (t1, t2)) ->
-      Printf.printf "Unification failed in `%s = %s`"
-        (Pretty.string_of_ty t1) (Pretty.string_of_ty t2)
+let env = Map.empty
+
+let main () =
+  while true do
+    print_string "-> ";
+    let line = read_line () in
+    try
+      let buf = Lexing.from_string line in
+      let e = Parse.main Lex.token buf in
+      let s, ty = infer env e in
+        print_string "S = ";
+        Pretty.string_of_subst s |> print_endline;
+        print_string "ty = ";
+        Pretty.string_of_ty ty |> print_endline
+    with
+    | Lex.Lex_error -> print_endline "Error while lexing"
+    | Parsing.Parse_error -> print_endline "Error while parsing"
+    | Infer.Error (UnboundVar var) ->
+        Printf.printf "Unbound variable `%s`\n" var
+    | Infer.Error (OccurFail (var, ty)) ->
+        Printf.printf "Occurs check failed in `%s = %s`\n" var
+          (Pretty.string_of_ty ty)
+    | Infer.Error (UnifyFail (t1, t2)) ->
+        Printf.printf "Unification failed in `%s = %s`\n"
+          (Pretty.string_of_ty t1) (Pretty.string_of_ty t2)
+  done
 
 let () =
-  let e =
-    Abs
-      ( "m",
-        Let ("y", Var "m", Let ("x", App (Var "y", Lit (Bool true)), Var "x"))
-      )
-  in
-  main e
+  try main () with
+  | _ -> print_newline ()
