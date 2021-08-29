@@ -33,6 +33,8 @@
  *  | E1 E2
  *  | λx -> E
  *  | let x = E1 in E2
+ *  | rec x = E1 in E2
+ *  | if E1 then E2 else E3
  *  | E1, ..., En
  *  | lit
  *)
