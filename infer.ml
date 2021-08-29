@@ -33,6 +33,7 @@
  *  | E1 E2
  *  | λx -> E
  *  | let x = E1 in E2
+ *  | E1, ..., En
  *  | lit
  *)
 type expr =
@@ -40,6 +41,7 @@ type expr =
   | App of expr * expr
   | Abs of string * expr
   | Let of string * expr * expr
+  | Tup of expr list
   | Lit of lit
 
 and lit = Int of int | Bool of bool
@@ -75,7 +77,11 @@ let var_fresh : unit -> var =
  *  | Bool
  *  | τ1 -> τ2
  *)
-type ty = TVar of var | TConst of string | TFun of ty * ty
+type ty =
+  | TVar of var
+  | TConst of string
+  | TFun of ty * ty
+  | TTup of ty list
 
 (**
  * A type scheme is denoted by σ (lowercase sigma)
@@ -168,6 +174,7 @@ let rec apply (s : subst) : ty -> ty = function
     end
   | TConst name -> TConst name
   | TFun (t1, t2) -> TFun (apply s t1, apply s t2)
+  | TTup ts -> TTup (List.map (apply s) ts)
 
 (**
  * Substitution application for a type scheme
@@ -289,6 +296,13 @@ let rec collect (m : mono) : expr -> ty * assump list * constr list = function
           ([], []) a2
       in
       (t2, a1 @ a', c1 @ c2 @ c')
+  | Tup es ->
+     let ts, a, c = List.fold_left (fun (acc, a, c) e ->
+         let t', a', c' = collect m e in
+         t' :: acc, a @ a', c @ c')
+        ([], [], []) es
+      in
+      (TTup ts, a, c)
   | Lit (Int _) -> (TConst "Int", [], [])
   | Lit (Bool _) -> (TConst "Bool", [], [])
 
@@ -301,6 +315,8 @@ let rec freevars : ty -> Set.t = function
   | TVar var -> Set.singleton var
   | TConst _ -> Set.empty
   | TFun (t1, t2) -> Set.union (freevars t1) (freevars t2)
+  | TTup ts ->
+      List.fold_left (fun acc ty -> Set.union (freevars ty) acc) Set.empty ts
 
 (**
  * The set of free type variables of a type scheme σ
@@ -411,12 +427,19 @@ let rec mgu (t1 : ty) (t2 : ty) : subst =
     | _ -> Map.singleton var ty
   in
   match (t1, t2) with
-  | t1, t2 when t1 == t2 -> Map.empty
   | TVar var, ty | ty, TVar var -> bind var ty
+  | TConst name, TConst name' when name = name' -> Map.empty
   | TFun (t1, t2), TFun (t1', t2') ->
       let s1 = mgu t1 t1' in
       let s2 = mgu (apply s1 t2) (apply s1 t2') in
       compose s2 s1
+  | TTup ts, TTup ts' ->
+     if List.length ts != List.length ts' then
+       Error (UnifyFail (t1, t2)) |> raise
+     else
+       List.fold_left2 (fun acc t1 t2 ->
+         compose (mgu (apply acc t1) (apply acc t2)) acc)
+       Map.empty ts ts'
   | _ -> Error (UnifyFail (t1, t2)) |> raise
 
 (**

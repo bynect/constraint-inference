@@ -4,6 +4,10 @@ let rec string_of_ty : ty -> string = function
   | TVar var -> var
   | TConst name -> name
   | TFun (t1, t2) -> string_of_ty' t1 ^ " -> " ^ string_of_ty t2
+  | TTup [] -> "()"
+  | TTup (ty::ts) ->
+      List.fold_left (fun acc ty -> acc ^ " * " ^ string_of_ty' ty)
+      (string_of_ty' ty) ts
 
 and string_of_ty' : ty -> string = function
   | TFun (_, _) as ty -> "(" ^ string_of_ty ty ^ ")"

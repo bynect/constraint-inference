@@ -50,5 +50,14 @@ let main (gamma : env) =
   done
 
 let () =
-  try main Map.empty with
+  let base =
+    [
+      ("fst", Scheme(["'a";"'b"], TFun (TTup [TVar "'a"; TVar "'b"], TVar "'a")));
+      ("snd", Scheme(["'a";"'b"], TFun (TTup [TVar "'a"; TVar "'b"], TVar "'b")));
+    ]
+  in
+  let env = List.fold_left (fun acc (var, sigma) -> Map.add var sigma acc)
+    Map.empty base
+  in
+  try main env with
   | _ -> print_newline ()

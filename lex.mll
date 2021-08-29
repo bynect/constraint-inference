@@ -13,6 +13,7 @@ rule token = parse
   | ')' { LPAREN }
   | '\\' { BACKSLASH }
   | "->" { ARROW }
+  | ',' { COMMA }
   | '=' { EQUAL }
   | "let" { LET }
   | "in" { IN }

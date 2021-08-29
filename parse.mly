@@ -12,9 +12,11 @@ let rec expr_app e = function
 %token <bool> BOOL
 
 %token RPAREN LPAREN
-%token ARROW BACKSLASH EQUAL
+%token ARROW BACKSLASH EQUAL COMMA
 %token LET IN
 %token EOF
+
+%left COMMA
 
 %start main
 %type <Infer.expr> main
@@ -29,17 +31,24 @@ expr:
   | expr2; expr3 { expr_app $1 $2 }
   | BACKSLASH; VAR; ARROW; expr { Abs ($2, $4) }
   | LET; VAR; EQUAL; expr; IN; expr { Let ($2, $4, $6) }
+  | expr4 { Tup (List.rev $1) }
   ;
 
 expr2:
   | VAR { Var $1 }
   | lit { Lit $1 }
+  | RPAREN; LPAREN { Tup [] }
   | RPAREN; expr; LPAREN { $2 }
   ;
 
 expr3:
   | expr2 { [$1] }
   | expr2; expr3 { $1 :: $2 }
+  ;
+
+expr4:
+  | expr; COMMA; expr { [$1; $3] }
+  | expr4; COMMA; expr { $3 :: $1 }
   ;
 
 lit:

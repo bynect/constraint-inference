@@ -15,15 +15,15 @@ the paper pseudo-implementation.
 
 This repo contains the following branches:
 
-- [main](https://github.com/bynect/constraint-inference/tree/main) Original algorithm implementation with some additions (parser and repl)
+- [main](https://github.com/bynect/constraint-inference/tree/main) Original algorithm implementation with some additions (parser, repl, n-tuples)
 - [original](https://github.com/bynect/constraint-inference/tree/original) Original algorithm implementation with detailed comments
 - [clean](https://github.com/bynect/constraint-inference/tree/clean) A copy of the original branch without the comments
 - [parser](https://github.com/bynect/constraint-inference/tree/parser) A copy of the original branch with the addition of a parser and repl
 
 ## Grammar
 
-The `main` branch contains a parser and a little repl to check what types is inferred
-to ani expression.
+The `main` branch contains a parser and a little repl to check what types is inferred to an expression.
+Additionally, the `main` branch extends the algorithm described in the paper with n-tuples.
 
 ```txt
 E ::=
@@ -31,6 +31,7 @@ E ::=
   | E1 E2
   | \x -> E
   | let x = E1 in E2
+  | E1, ..., En
   | lit
 ```
 
