@@ -19,6 +19,20 @@ This repo contains the following branches:
 - [original](https://github.com/bynect/constraint-inference/tree/original) Original algorithm implementation with detailed comments
 - [clean](https://github.com/bynect/constraint-inference/tree/clean) A copy of the original branch without the comments
 
+## Grammar
+
+The `main` branch contains a parser and a little repl to check what types is inferred
+to ani expression.
+
+```txt
+E ::=
+  | x
+  | E1 E2
+  | \x -> E
+  | let x = E1 in E2
+  | lit
+```
+
 ## References
 
 [<a id="ref1">[1][paper-1]</a>] Bastiaan Heeren, Jurriaan Hage, and Doaitse Swierstra.

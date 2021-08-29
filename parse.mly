@@ -12,7 +12,7 @@ let rec expr_app e = function
 %token <bool> BOOL
 
 %token RPAREN LPAREN
-%token BACKSLASH DOT EQUAL
+%token ARROW BACKSLASH EQUAL
 %token LET IN
 %token EOF
 
@@ -27,7 +27,7 @@ main:
 expr:
   | expr2 { $1 }
   | expr2; expr3 { expr_app $1 $2 }
-  | BACKSLASH; VAR; DOT; expr { Abs ($2, $4) }
+  | BACKSLASH; VAR; ARROW; expr { Abs ($2, $4) }
   | LET; VAR; EQUAL; expr; IN; expr { Let ($2, $4, $6) }
   ;
 

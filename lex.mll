@@ -12,7 +12,7 @@ rule token = parse
   | '(' { RPAREN }
   | ')' { LPAREN }
   | '\\' { BACKSLASH }
-  | '.' { DOT }
+  | "->" { ARROW }
   | '=' { EQUAL }
   | "let" { LET }
   | "in" { IN }
