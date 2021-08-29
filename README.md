@@ -15,10 +15,11 @@ the paper pseudo-implementation.
 
 This repo contains the following branches:
 
-- [main](https://github.com/bynect/constraint-inference/tree/main) Original algorithm implementation with some additions (parser, repl, n-tuples, if expressions).
+- [main](https://github.com/bynect/constraint-inference/tree/main) Original algorithm implementation with some additions, unstable.
 - [original](https://github.com/bynect/constraint-inference/tree/original) Original algorithm implementation with detailed comments.
 - [clean](https://github.com/bynect/constraint-inference/tree/clean) A copy of the original branch without the comments.
 - [parser](https://github.com/bynect/constraint-inference/tree/parser) A copy of the original branch with the addition of a parser and repl.
+- [if-expr](https://github.com/bynect/constraint-inference/tree/if-expr) Same as the parser branch with the addition of n-tuples and if expressions.
 
 ## Grammar
 
@@ -40,8 +41,8 @@ E ::=
 ### Example
 
 The factorial of 10 implemented using a recursive binding.
-I am not completely sure about the correctness of the recursive bindings implementation (I marked it as experimental),
-however the type of the factorial function is inferred correctly.
+
+Note: The current implementation of recursive bindings is not correct. However the type of the factorial function is inferred correctly.
 
 ```txt
 rec fact = \n -> if eq n 1
