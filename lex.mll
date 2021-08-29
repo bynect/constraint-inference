@@ -15,7 +15,6 @@ rule token = parse
   | "->" { ARROW }
   | ',' { COMMA }
   | '=' { EQUAL }
-  | "rec" { REC }
   | "let" { LET }
   | "in" { IN }
   | "if" { IF }
