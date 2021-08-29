@@ -13,7 +13,7 @@ let rec expr_app e = function
 
 %token RPAREN LPAREN
 %token ARROW BACKSLASH EQUAL COMMA
-%token REC LET IN
+%token REC LET IN IF THEN ELSE
 %token EOF
 
 %left COMMA
@@ -32,6 +32,7 @@ expr:
   | BACKSLASH; VAR; ARROW; expr { Abs ($2, $4) }
   | LET; VAR; EQUAL; expr; IN; expr { Let ($2, $4, $6) }
   | REC; VAR; EQUAL; expr; IN; expr { Rec ($2, $4, $6) }
+  | IF; expr; THEN; expr; ELSE; expr { If ($2, $4, $6) }
   | expr4 { Tup (List.rev $1) }
   ;
 

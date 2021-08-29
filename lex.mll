@@ -18,6 +18,9 @@ rule token = parse
   | "rec" { REC }
   | "let" { LET }
   | "in" { IN }
+  | "if" { IF }
+  | "then" { THEN }
+  | "else" { ELSE }
   | "True" { BOOL true }
   | "False" { BOOL false }
   | ['a'-'z' 'A'-'Z' '_']+

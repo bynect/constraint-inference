@@ -42,6 +42,7 @@ type expr =
   | Abs of string * expr
   | Let of string * expr * expr
   | Rec of string * expr * expr
+  | If of expr * expr * expr
   | Tup of expr list
   | Lit of lit
 
@@ -317,6 +318,12 @@ let rec collect (m : mono) : expr -> ty * assump list * constr list = function
           ([], []) a2
       in
       (t2, a1' @ a2', c1 @ c1' @ c2 @ c2')
+  | If (e1, e2, e3) ->
+      let t1, a1, c1 = collect m e1
+      and t2, a2, c2 = collect m e2
+      and t3, a3, c3 = collect m e3
+      in
+      (t2, a1 @ a2 @ a3, Equality (t1, TConst "Bool") :: Equality (t2, t3) :: (c1 @ c2 @ c3))
   | Tup es ->
      let ts, a, c = List.fold_left (fun (acc, a, c) e ->
          let t', a', c' = collect m e in
