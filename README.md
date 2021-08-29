@@ -40,13 +40,13 @@ E ::=
 ### Example
 
 The factorial of 10 implemented using a recursive binding.
-I am not completely sure about the correctness of the recursive
-bindings implementation, however the factorial function typechecks correctly.
+I am not completely sure about the correctness of the recursive bindings implementation (I marked it as experimental),
+however the type of the factorial function is inferred correctly.
 
 ```txt
 rec fact = \n -> if eq n 1
-			then 1
-			else mul n (fact (sub n 1))
+		then 1
+		else mul n (fact (sub n 1))
 in fact 10
 ```
 
