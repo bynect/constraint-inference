@@ -52,6 +52,7 @@ let main (gamma : env) =
 let () =
   let base =
     [
+      ("fix", Scheme(["'a"], TFun (TFun (TVar "'a", TVar "'a"), TVar "'a")));
       ("id", Scheme(["'a"], TFun (TVar "'a", TVar "'a")));
       ("eq", Scheme(["'a"], TFun (TVar "'a", TFun (TVar "'a", TConst "Bool"))));
       ("sub", Scheme([], TFun (TVar "Int", TFun (TVar "Int", TConst "Int"))));

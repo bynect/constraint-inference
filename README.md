@@ -40,8 +40,16 @@ E ::=
 
 ### Example
 
-The factorial of 10 implemented using a recursive binding.
+The factorial of 10 implemented with the fix combinator.
 
+```txt
+let fact = fix (\fact -> \n -> if eq n 1
+				then 1
+				else mul n (sub n 1))
+in fact 10
+```
+
+The factorial of 10 implemented using a recursive binding.
 Note: The current implementation of recursive bindings is not correct. However the type of the factorial function is inferred correctly.
 
 ```txt
