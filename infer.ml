@@ -301,25 +301,18 @@ let rec collect (m : mono) : expr -> ty * assump list * constr list = function
       in
       (t2, a1 @ a', c1 @ c2 @ c')
   | Rec (x, e1, e2) ->
-      let beta = var_fresh () in
-      let t1, a1, c1 = collect (Set.add beta m) e1 and t2, a2, c2 = collect m e2 in
-      let a1', c1' = List.fold_left
-          (fun (acc, acc') a' ->
-            let (Assumption (x', t')) = a' in
-            if x' = x then (acc, Equality (t', TVar beta) :: acc')
-            else (Assumption (x', t') :: acc, acc'))
-          ([], []) a1
-      in
+      let tv = TVar (var_fresh ()) in
+      let t1, a1, c1 = collect m (Abs (x, e1)) and t2, a2, c2 = collect m e2 in
       let m' = Set.to_seq m |> List.of_seq in
-      let a2', c2' =
+      let a', c' =
         List.fold_left
           (fun (acc, acc') a' ->
             let (Assumption (x', t')) = a' in
-            if x' = x then (acc, ImplInstance (t', t1, m') :: acc')
+            if x' = x then (acc, ImplInstance (t', tv, m') :: acc')
             else (Assumption (x', t') :: acc, acc'))
           ([], []) a2
       in
-      (t2, a1' @ a2', c1 @ c1' @ c2 @ c2')
+      (t2, a1 @ a', Equality (TFun (tv, tv), t1) :: c1 @ c2 @ c')
   | If (e1, e2, e3) ->
       let t1, a1, c1 = collect m e1
       and t2, a2, c2 = collect m e2
