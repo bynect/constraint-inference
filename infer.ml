@@ -23,6 +23,12 @@
  * the paper is unchanged, there may be small
  * divergences between this implementation and
  * the paper pseudo-implementation
+ *
+ * NOTE: This document contains additions to the
+ * original described in the paper above.
+ * A version of this document more faithful to the paper
+ * can be found at
+ * github.com/bynect/constraint-inference/tree/original
  *)
 
 (**
