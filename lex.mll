@@ -8,7 +8,6 @@ rule token = parse
   | [' ' '\t' '\r']+ { token lexbuf }
   | '\n' { Lexing.new_line lexbuf; token lexbuf }
   | "--" [^'\n']* { token lexbuf }
-  | eof { EOF }
   | '(' { RPAREN }
   | ')' { LPAREN }
   | '\\' { BACKSLASH }
@@ -23,12 +22,7 @@ rule token = parse
   | "else" { ELSE }
   | "True" { BOOL true }
   | "False" { BOOL false }
-  | ['a'-'z' 'A'-'Z' '_']+
-    {
-        VAR (Lexing.lexeme lexbuf)
-    }
-  | ['0'-'9']+
-    {
-        INT (Lexing.lexeme lexbuf |> int_of_string)
-    }
+  | ['a'-'z' 'A'-'Z' '_']+ { VAR (Lexing.lexeme lexbuf) }
+  | ['0'-'9']+ { INT (Lexing.lexeme lexbuf |> int_of_string) }
+  | eof { EOF }
   | _ { raise Lex_error }
