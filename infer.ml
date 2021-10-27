@@ -86,6 +86,7 @@ let var_fresh : unit -> var =
  *  | Int
  *  | Bool
  *  | τ1 -> τ2
+ *  | τ1 * ... * τn
  *)
 type ty =
   | TVar of var
