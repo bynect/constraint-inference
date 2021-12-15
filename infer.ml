@@ -83,8 +83,11 @@ let var_fresh : unit -> var =
  *
  * τ ::=
  *  | α
-    | C τ1...τn
+ *  | C τ1...τn
  *  | τ1 -> τ2
+ *
+ * NOTE: The function constructor can be represented
+ * by a type constructor.
  *)
 type ty =
   | TVar of var
