@@ -1,15 +1,26 @@
 open Infer
 
+let for_all f s =
+  try
+    for i = 0 to String.length s - 1 do
+      assert (f s.[i])
+    done;
+    true
+  with _ -> false
+
 let rec string_of_ty : ty -> string = function
   | TVar var -> var
-  | TConst name -> name
+  | TCon (name, []) -> name
+  | TCon (name, (ty :: ts)) ->
+      if for_all ((==) ',') name then
+        List.fold_left (fun acc ty -> acc ^ " * " ^ string_of_ty' ty)
+        (string_of_ty' ty) ts
+      else
+        List.fold_left (fun acc ty -> acc ^ " " ^ string_of_ty' ty) name (ty :: ts)
   | TFun (t1, t2) -> string_of_ty' t1 ^ " -> " ^ string_of_ty t2
-  | TTup [] -> "()"
-  | TTup (ty::ts) ->
-      List.fold_left (fun acc ty -> acc ^ " * " ^ string_of_ty' ty)
-      (string_of_ty' ty) ts
 
 and string_of_ty' : ty -> string = function
+  | TCon (_, _::_) as ty -> "(" ^ string_of_ty ty ^ ")"
   | TFun (_, _) as ty -> "(" ^ string_of_ty ty ^ ")"
   | ty -> string_of_ty ty
 

@@ -49,16 +49,22 @@ let main (gamma : env) =
           (Pretty.string_of_ty t1') (Pretty.string_of_ty t2')
   done
 
+let type_int = TCon ("Int", [])
+
+let type_bool = TCon ("Bool", [])
+
+let type_tuple a b = TCon (",,", [a; b])
+
 let () =
   let base =
     [
       ("id", Scheme(["'a"], TFun (TVar "'a", TVar "'a")));
-      ("eq", Scheme(["'a"], TFun (TVar "'a", TFun (TVar "'a", TConst "Bool"))));
-      ("sub", Scheme([], TFun (TVar "Int", TFun (TVar "Int", TConst "Int"))));
-      ("add", Scheme([], TFun (TVar "Int", TFun (TVar "Int", TConst "Int"))));
-      ("mul", Scheme([], TFun (TVar "Int", TFun (TVar "Int", TConst "Int"))));
-      ("fst", Scheme(["'a";"'b"], TFun (TTup [TVar "'a"; TVar "'b"], TVar "'a")));
-      ("snd", Scheme(["'a";"'b"], TFun (TTup [TVar "'a"; TVar "'b"], TVar "'b")));
+      ("eq", Scheme(["'a"], TFun (TVar "'a", TFun (TVar "'a", type_bool))));
+      ("sub", Scheme([], TFun (TVar "Int", TFun (TVar "Int", type_int))));
+      ("add", Scheme([], TFun (TVar "Int", TFun (TVar "Int", type_int))));
+      ("mul", Scheme([], TFun (TVar "Int", TFun (TVar "Int", type_int))));
+      ("fst", Scheme(["'a";"'b"], TFun (type_tuple (TVar "'a") (TVar "'b"), TVar "'a")));
+      ("snd", Scheme(["'a";"'b"], TFun (type_tuple (TVar "'a") (TVar "'b"), TVar "'b")));
     ]
   in
   let env = List.fold_left (fun acc (var, sigma) -> Map.add var sigma acc)

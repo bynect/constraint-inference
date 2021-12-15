@@ -82,17 +82,14 @@ let var_fresh : unit -> var =
  * A type is denoted by τ (lowercase tau)
  *
  * τ ::=
- *  | α1...αn
- *  | Int
- *  | Bool
+ *  | α
+    | C τ1...τn
  *  | τ1 -> τ2
- *  | τ1 * ... * τn
  *)
 type ty =
   | TVar of var
-  | TConst of string
+  | TCon of string * ty list
   | TFun of ty * ty
-  | TTup of ty list
 
 (**
  * A type scheme is denoted by σ (lowercase sigma)
@@ -183,9 +180,8 @@ let rec apply (s : subst) : ty -> ty = function
       | Some ty -> ty
       | None -> TVar var
     end
-  | TConst name -> TConst name
+  | TCon (name, ts) -> TCon (name, (List.map (apply s) ts))
   | TFun (t1, t2) -> TFun (apply s t1, apply s t2)
-  | TTup ts -> TTup (List.map (apply s) ts)
 
 (**
  * Substitution application for a type scheme
@@ -325,16 +321,16 @@ let rec collect (m : mono) : expr -> ty * assump list * constr list = function
       and t2, a2, c2 = collect m e2
       and t3, a3, c3 = collect m e3
       in
-      (t2, a1 @ a2 @ a3, Equality (t1, TConst "Bool") :: Equality (t2, t3) :: (c1 @ c2 @ c3))
+      (t2, a1 @ a2 @ a3, Equality (t1, TCon ("Bool", [])) :: Equality (t2, t3) :: (c1 @ c2 @ c3))
   | Tup es ->
      let ts, a, c = List.fold_left (fun (acc, a, c) e ->
          let t', a', c' = collect m e in
          t' :: acc, a @ a', c @ c')
         ([], [], []) es
       in
-      (TTup ts, a, c)
-  | Lit (Int _) -> (TConst "Int", [], [])
-  | Lit (Bool _) -> (TConst "Bool", [], [])
+      (TCon (String.make (List.length ts) ',', ts), a, c)
+  | Lit (Int _) -> (TCon ("Int", []), [], [])
+  | Lit (Bool _) -> (TCon ("Bool", []), [], [])
 
 (**
  * The set of free type variables of a type τ is
@@ -343,10 +339,8 @@ let rec collect (m : mono) : expr -> ty * assump list * constr list = function
  *)
 let rec freevars : ty -> Set.t = function
   | TVar var -> Set.singleton var
-  | TConst _ -> Set.empty
+  | TCon (_, ts) -> List.fold_left (fun acc ty -> Set.union (freevars ty) acc) Set.empty ts
   | TFun (t1, t2) -> Set.union (freevars t1) (freevars t2)
-  | TTup ts ->
-      List.fold_left (fun acc ty -> Set.union (freevars ty) acc) Set.empty ts
 
 (**
  * The set of free type variables of a type scheme σ
@@ -458,18 +452,17 @@ let rec mgu (t1 : ty) (t2 : ty) : subst =
   in
   match (t1, t2) with
   | TVar var, ty | ty, TVar var -> bind var ty
-  | TConst name, TConst name' when name = name' -> Map.empty
-  | TFun (t1, t2), TFun (t1', t2') ->
-      let s1 = mgu t1 t1' in
-      let s2 = mgu (apply s1 t2) (apply s1 t2') in
-      compose s2 s1
-  | TTup ts, TTup ts' ->
+  | TCon (name, ts), TCon (name', ts') when name = name' ->
      if List.length ts != List.length ts' then
        Error (UnifyFail (t1, t2)) |> raise
      else
        List.fold_left2 (fun acc t1 t2 ->
          compose (mgu (apply acc t1) (apply acc t2)) acc)
        Map.empty ts ts'
+  | TFun (t1, t2), TFun (t1', t2') ->
+      let s1 = mgu t1 t1' in
+      let s2 = mgu (apply s1 t2) (apply s1 t2') in
+      compose s2 s1
   | _ -> Error (UnifyFail (t1, t2)) |> raise
 
 (**
